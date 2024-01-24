@@ -20,7 +20,7 @@ def load_model(model_key):
 
     # Load the saved model
     # model_s = keras.models.load_model(model_path[model_key]) TODO: Enable this line when the model is loaded
-    model_s = None
+    model_s = None # TODO: Remove this line when the model is loaded
     return model_s
 
 def upload_image():
