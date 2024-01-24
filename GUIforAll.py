@@ -2,7 +2,8 @@ from random import random, choice
 import numpy as np
 import os
 import tkinter as tk
-# from tensorflow import keras
+from tkinter import ttk
+# from tensorflow import keras TODO: Enable this line when the model is loaded
 from tkinter import filedialog
 from PIL import ImageTk, Image
 import random
@@ -78,25 +79,30 @@ def update_similar_images(predicted_category):
 
     # Get the list of images in the predicted category
     if predicted_category == 0:
-        image_list = os.listdir('data/test/cats')
+        image_list = os.listdir('images/cats')
     else:
-        image_list = os.listdir('data/test/dogs')
+        image_list = os.listdir('images/dogs')
 
     # Get 3 random images from the list
     random_images = random.sample(image_list, 3)
 
     # Update the image objects
-    image_similar_object_1 = ImageTk.PhotoImage(Image.open(random_images[0]).resize((300, 300)))
-    image_similar_object_2 = ImageTk.PhotoImage(Image.open(random_images[1]).resize((300, 300)))
-    image_similar_object_3 = ImageTk.PhotoImage(Image.open(random_images[2]).resize((300, 300)))
+    image_similar_object_1 = ImageTk.PhotoImage(Image.open(os.path.join('images/cats' if predicted_category == 0 else 'images/dogs', random_images[0])).resize((300, 300)))
+    image_similar_object_2 = ImageTk.PhotoImage(Image.open(os.path.join('images/cats' if predicted_category == 0 else 'images/dogs', random_images[1])).resize((300, 300)))
+    image_similar_object_3 = ImageTk.PhotoImage(Image.open(os.path.join('images/cats' if predicted_category == 0 else 'images/dogs', random_images[2])).resize((300, 300)))
 
     # Update the labels
     similar_label_1.config(image=image_similar_object_1)
     similar_label_1.image = image_similar_object_1
+    similar_label_1.update()
+
     similar_label_2.config(image=image_similar_object_2)
     similar_label_2.image = image_similar_object_2
+    similar_label_2.update()
+
     similar_label_3.config(image=image_similar_object_3)
     similar_label_3.image = image_similar_object_3
+    similar_label_3.update()
 
 def main_button(model_key):
     global image
@@ -106,12 +112,14 @@ def main_button(model_key):
 
     # Predict the category
     predicted_category = predict_category(model)
+
+    update_similar_images(predicted_category)
     
 ####################
 # Create the GUI
 root = tk.Tk()
 root.title('Cat vs Dog Classifier')
-root.geometry('1000x900')
+root.geometry('1000x950')
 
 # Create a frame for the title
 title_frame = tk.Frame(root)
@@ -180,12 +188,15 @@ results_frame.pack()
 
 # Create a label to display the predicted category
 predicted_category_label = tk.Label(results_frame, text='Predicted category:', font=('Arial', 16))
-predicted_category_label.pack()
-
+predicted_category_label.pack(side='left', padx=5, pady=15)
 
 # Create a frame to display the predicted images
 similar_img_frame = tk.Frame(root)
 similar_img_frame.pack()
+
+# Add a horizontal divider
+divider = ttk.Separator(similar_img_frame, orient='horizontal')
+divider.pack(fill='x', padx=20, pady=20)
 
 # Create a label to display the predicted category
 similar_img_label = tk.Label(similar_img_frame, text='Similar images in the same category', font=('Arial', 16))
