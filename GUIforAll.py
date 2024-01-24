@@ -2,226 +2,209 @@ from random import random, choice
 import numpy as np
 import os
 import tkinter as tk
-from tensorflow import keras
+# from tensorflow import keras
 from tkinter import filedialog
 from PIL import ImageTk, Image
+import random
+from PIL import Image
 
-def load_CNN():
+# Load the saved model
+def load_model(model_key):
     # Specify the path to the saved model file, including the filename
-    model_path = '/Users/sterreterpstra/PycharmProjects/pythonProject4/cat_dog_classifier_1.h5'
+    model_path = {'svm': 'classifier_SVM.h5', 
+                  'dt': 'classifier_DT.h5', 
+                  'cnn': 'classifier_CNN.h5', 
+                  'cnn_bias': 'classifier_CNN_biased.h5'
+                  }
+
     # Load the saved model
-    model_s = keras.models.load_model(model_path)
+    # model_s = keras.models.load_model(model_path[model_key]) TODO: Enable this line when the model is loaded
+    model_s = None
     return model_s
 
+def upload_image():
+    global image_label, image_array 
 
-def load_CNNbiased():
-    # Specify the path to the saved model file, including the filename
-    model_path = '/Users/sterreterpstra/PycharmProjects/pythonProject4/cat_dog_classifierbiased_1.h5'
-    # Load the saved model
-    model_s = keras.models.load_model(model_path)
-    return model_s
-
-
-def load_DT():
-    model_path = '/Users/sterreterpstra/PycharmProjects/pythonProject4/cat_dog_DT.h5'
-    model_s = keras.models.load_model(model_path)
-    return model_s
-
-
-def load_SVM():
-    model_path = '/Users/sterreterpstra/PycharmProjects/pythonProject4/cat_dog_SVM.h5'
-    model_s = keras.models.load_model(model_path)
-    return model_s
-
-
-# Load the trained model
-model_saved_CNN = load_CNN()
-model_saved_CNNbiased = load_CNNbiased()
-model_saved_DT = load_DT()
-model_saved_SVM = load_SVM()
-
-
-def upload_image_CNN():
-    global image_label, predicted_category_label, predicted_images_frame
     # Open the file dialog to select an image
     filename = filedialog.askopenfilename(initialdir='.', title='Select Image',
                                           filetypes=[('Image Files', '*.jpg .jpeg .png')])
-    # Check if an image was selected
-    if filename:
-        image = Image.open(filename)  # Load the image from the selected file
-        image = image.resize((64, 64))  # Resize the image to 64x64
-        image = image.convert('RGB')  # Convert the image to RGB format
-        image_array = np.array(image)  # Convert the image to NumPy array for prediction
-        image_array = image_array.reshape((1, 64, 64, 3))  # Reshape the image array to fit the model input shape
+    
+    # Load image
+    try:
+        image_raw = Image.open(filename)  # Load the image from the selected file
+        
+    except Exception as e:
+        print(f"Error loading image: {e}")
 
-        prediction = model_saved_CNN.predict(image_array)
-        predicted_category = int(prediction[0])  # Update this line to match your model's output
-        predicted_category_label_text = 'Cat' if predicted_category == 0 else 'Dog'  # Convert the binary prediction to a human-readable label
-        predicted_category_label.config(
-            text=f'Predicted category: {predicted_category_label_text}')  # Update the GUI with the predicted category
-        predicted_category_label.update()
+    # Image preprocessing
+    image = image_raw.resize((64, 64))  # Resize the image to 64x64
+    image = image.convert('RGB')  # Convert the image to RGB format
+    image_array = np.array(image)  # Convert the image to NumPy array for prediction
+    image_array = image_array.reshape((1, 64, 64, 3))  # Reshape the image array to fit the model input shape
+    
+    # Clean the existing image_label
+    image_label.destroy()
+    
+    # Create an object to show default-img.jpg
+    image_object = ImageTk.PhotoImage(image_raw.resize((300, 300)))
 
-        # Display the selected image
-        image_label.destroy()  # Clear the existing image label
+    # Create a label to display the default image
+    image_label = tk.Label(image_frame, image=image_object)
+    image_label.pack(side='left', padx=5, pady=5)
+    
+    # Display the image in the frame
+    image_label.image = image_object
+    
+    return image_array
 
-        # Convert the Image object to an ImageTk object
-        image_tk = ImageTk.PhotoImage(image)
+def predict_category(model):
+    global image_label, predicted_category_label, image_array
 
-        # Create a label to display the ImageTk object
-        image_label = tk.Label(image_frame, image=image_tk)
-        image_label.pack()
+    # Predict the category
+    prediction = random.randint(0, 1)
+    # prediction = model.predict(image_array) #TODO: Enable this line when the model is loaded
+    
+    # Convert the prediction to a human-readable label
+    predicted_category = int(prediction)  # TODO: Update this line to match your model's output
+    predicted_category_label_text = 'Cat' if predicted_category == 0 else 'Dog'  # Convert the binary prediction to a human-readable label
+    predicted_category_label.config(
+        text=f'Predicted category: {predicted_category_label_text}')  # Update the GUI with the predicted category
+    predicted_category_label.update()
 
-        predicted_images_frame.destroy()  # Clear the existing predicted images frame
-        predicted_images_frame = tk.Frame(root)
-        predicted_images_frame.pack()
+    return predicted_category
 
-def upload_image_CNNbiased():
-    global image_label, predicted_category_label, predicted_images_frame
-    # Open the file dialog to select an image
-    filename = filedialog.askopenfilename(initialdir='.', title='Select Image',
-                                          filetypes=[('Image Files', '*.jpg .jpeg .png')])
-    # Check if an image was selected
-    if filename:
-        image = Image.open(filename)  # Load the image from the selected file
-        image = image.resize((64, 64))  # Resize the image to 64x64
-        image = image.convert('RGB')  # Convert the image to RGB format
-        image_array = np.array(image)  # Convert the image to NumPy array for prediction
-        image_array = image_array.reshape((1, 64, 64, 3))  # Reshape the image array to fit the model input shape
+def update_similar_images(predicted_category):
+    global image_similar_object_1, image_similar_object_2, image_similar_object_3, similar_label_1, similar_label_2, similar_label_3
 
-        prediction = model_saved_CNN.predict(image_array)
-        predicted_category = int(prediction[0])  # Update this line to match your model's output
-        predicted_category_label_text = 'Cat' if predicted_category == 0 else 'Dog'  # Convert the binary prediction to a human-readable label
-        predicted_category_label.config(
-            text=f'Predicted category: {predicted_category_label_text}')  # Update the GUI with the predicted category
-        predicted_category_label.update()
+    # Get the list of images in the predicted category
+    if predicted_category == 0:
+        image_list = os.listdir('data/test/cats')
+    else:
+        image_list = os.listdir('data/test/dogs')
 
-        # Display the selected image
-        image_label.destroy()  # Clear the existing image label
+    # Get 3 random images from the list
+    random_images = random.sample(image_list, 3)
 
-        # Convert the Image object to an ImageTk object
-        image_tk = ImageTk.PhotoImage(image)
+    # Update the image objects
+    image_similar_object_1 = ImageTk.PhotoImage(Image.open(random_images[0]).resize((300, 300)))
+    image_similar_object_2 = ImageTk.PhotoImage(Image.open(random_images[1]).resize((300, 300)))
+    image_similar_object_3 = ImageTk.PhotoImage(Image.open(random_images[2]).resize((300, 300)))
 
-        # Create a label to display the ImageTk object
-        image_label = tk.Label(image_frame, image=image_tk)
-        image_label.pack()
+    # Update the labels
+    similar_label_1.config(image=image_similar_object_1)
+    similar_label_1.image = image_similar_object_1
+    similar_label_2.config(image=image_similar_object_2)
+    similar_label_2.image = image_similar_object_2
+    similar_label_3.config(image=image_similar_object_3)
+    similar_label_3.image = image_similar_object_3
 
-        predicted_images_frame.destroy()  # Clear the existing predicted images frame
-        predicted_images_frame = tk.Frame(root)
-        predicted_images_frame.pack()
+def main_button(model_key):
+    global image
 
+    # Load the model
+    model = load_model(model_key)
 
-def upload_image_DT():
-    global image_label, predicted_category_label, predicted_images_frame
-    # Open the file dialog to select an image
-    filename = filedialog.askopenfilename(initialdir='.', title='Select Image',
-                                          filetypes=[('Image Files', '*.jpg .jpeg .png')])
-    # Check if an image was selected
-    if filename:
-        image = Image.open(filename)  # Load the image from the selected file
-        image = image.resize((64, 64))  # Resize the image to 64x64
-        image = image.convert('RGB')  # Convert the image to RGB format
-        image_array = np.array(image)  # Convert the image to NumPy array for prediction
-        image_array = image_array.reshape((1, 64, 64, 3))  # Reshape the image array to fit the model input shape
-
-        prediction = model_saved_SVM.predict(image_array)
-        predicted_category = int(prediction[0])  # Update this line to match your model's output
-        predicted_category_label_text = 'Cat' if predicted_category == 0 else 'Dog'  # Convert the binary prediction to a human-readable label
-        predicted_category_label.config(
-            text=f'Predicted category: {predicted_category_label_text}')  # Update the GUI with the predicted category
-        predicted_category_label.update()
-
-        # Display the selected image
-        image_label.destroy()  # Clear the existing image label
-
-        # Convert the Image object to an ImageTk object
-        image_tk = ImageTk.PhotoImage(image)
-
-        # Create a label to display the ImageTk object
-        image_label = tk.Label(image_frame, image=image_tk)
-        image_label.pack()
-
-        predicted_images_frame.destroy()  # Clear the existing predicted images frame
-        predicted_images_frame = tk.Frame(root)
-        predicted_images_frame.pack()
-
-def upload_image_SVM():
-    global image_label, predicted_category_label, predicted_images_frame
-    # Open the file dialog to select an image
-    filename = filedialog.askopenfilename(initialdir='.', title='Select Image',
-                                          filetypes=[('Image Files', '*.jpg .jpeg .png')])
-    # Check if an image was selected
-    if filename:
-        image = Image.open(filename)  # Load the image from the selected file
-        image = image.resize((64, 64))  # Resize the image to 64x64
-        image = image.convert('RGB')  # Convert the image to RGB format
-        image_array = np.array(image)  # Convert the image to NumPy array for prediction
-        image_array = image_array.reshape((1, 64, 64, 3))  # Reshape the image array to fit the model input shape
-
-        prediction = model_saved_DT.predict(image_array)
-        predicted_category = int(prediction[0])  # Update this line to match your model's output
-        predicted_category_label_text = 'Cat' if predicted_category == 0 else 'Dog'  # Convert the binary prediction to a human-readable label
-        predicted_category_label.config(
-            text=f'Predicted category: {predicted_category_label_text}')  # Update the GUI with the predicted category
-        predicted_category_label.update()
-
-        # Display the selected image
-        image_label.destroy()  # Clear the existing image label
-
-        # Convert the Image object to an ImageTk object
-        image_tk = ImageTk.PhotoImage(image)
-
-        # Create a label to display the ImageTk object
-        image_label = tk.Label(image_frame, image=image_tk)
-        image_label.pack()
-
-        predicted_images_frame.destroy()  # Clear the existing predicted images frame
-        predicted_images_frame = tk.Frame(root)
-        predicted_images_frame.pack()
-
-
+    # Predict the category
+    predicted_category = predict_category(model)
+    
+####################
 # Create the GUI
 root = tk.Tk()
 root.title('Cat vs Dog Classifier')
-root.geometry('800x600')
+root.geometry('1000x900')
+
+# Create a frame for the title
+title_frame = tk.Frame(root)
+title_frame.pack()
+
+# Create a label for the title
+title_label = tk.Label(title_frame, text='Cat vs Dog Classifier', font=('Arial', 20, 'bold'))
+title_label.pack(pady=10)
 
 # Create a frame for the image upload
-upload_frame = tk.Frame(root)
-upload_frame.pack()
-
-# Create a button for the CNN model
-cnn_button = tk.Button(upload_frame, text='Convolutional Neural Network', command=upload_image_CNN)
-cnn_button.pack()
-
-cnnbiased_button = tk.Button(upload_frame, text='Convolutional Neural Network 2', command=upload_image_CNNbiased)
-cnnbiased_button.pack()
-
-# Create a button for the SVM model
-svm_button = tk.Button(upload_frame, text='Support Vector Machine', command=upload_image_SVM)
-svm_button.pack()
-
-# Create a button for the DT model
-dt_button = tk.Button(upload_frame, text='Decision Tree', command=upload_image_DT)
-dt_button.pack()
-
-# Create a frame for the image display
 image_frame = tk.Frame(root)
 image_frame.pack()
 
-# Create a label to display the uploaded image
-image_label = tk.Label(image_frame)
-image_label.pack()
+# Create an object to show default-img.jpg
+image_object = ImageTk.PhotoImage(Image.open("default-img.jpg"))
 
-# Create a frame for the prediction results
+# Create a label to display the default image
+image_label = tk.Label(image_frame, image=image_object)
+image_label.pack(side='left', padx=5, pady=5)
+
+# Create a frame for the image upload button
+upload_frame = tk.Frame(root)
+upload_frame.pack()
+
+# Create a button to upload the image
+upload_button = tk.Button(upload_frame, 
+                          text='Upload Image', 
+                          command=lambda: upload_image())
+upload_button.pack(side='left', padx=5, pady=5)
+
+# Create a frame for the buttons
+model_frame = tk.Frame(root)
+model_frame.pack()
+
+# Create a label for the title
+title_label = tk.Label(model_frame, text='Select a classifier:', font=('Arial', 16))
+title_label.pack(pady=10)
+
+# Create a button for the SVM model
+svm_button = tk.Button(model_frame, 
+                       text='Support Vector Machine', 
+                       command=lambda: main_button(model_key='svm'))
+svm_button.pack(side='left', padx=5, pady=5)
+
+# Create a button for the DT model
+dt_button = tk.Button(model_frame, 
+                      text='Decision Tree', 
+                      command=lambda: main_button(model_key='dt'))
+dt_button.pack(side='left', padx=5, pady=5)
+
+# Create a button for the biased CNN model
+cnn_button = tk.Button(model_frame, 
+                       text='Convolutional Neural Network 1', 
+                       command=lambda: main_button(model_key='cnn_bias'))
+cnn_button.pack(side='left', padx=5, pady=5)
+
+# Create a button for the CNN model
+cnnbias_button = tk.Button(model_frame, 
+                           text='Convolutional Neural Network 2', 
+                           command=lambda: main_button(model_key='cnn'))
+cnnbias_button.pack(side='left', padx=5, pady=5)
+
+# Create a frame to display the predicted images
 results_frame = tk.Frame(root)
 results_frame.pack()
 
 # Create a label to display the predicted category
-predicted_category_label = tk.Label(results_frame, text='Predicted category:')
+predicted_category_label = tk.Label(results_frame, text='Predicted category:', font=('Arial', 16))
 predicted_category_label.pack()
 
+
 # Create a frame to display the predicted images
-predicted_images_frame = tk.Frame(root)
-predicted_images_frame.pack()
+similar_img_frame = tk.Frame(root)
+similar_img_frame.pack()
+
+# Create a label to display the predicted category
+similar_img_label = tk.Label(similar_img_frame, text='Similar images in the same category', font=('Arial', 16))
+similar_img_label.pack()
+
+# Create an object to show default-img.jpg
+image_similar_object_1 = ImageTk.PhotoImage(Image.open("default-img.jpg"))
+image_similar_object_2 = ImageTk.PhotoImage(Image.open("default-img.jpg"))
+image_similar_object_3 = ImageTk.PhotoImage(Image.open("default-img.jpg"))
+
+# Create a label to display the default image
+similar_label_1 = tk.Label(similar_img_frame, image=image_similar_object_1)
+similar_label_1.pack(side='left', padx=5, pady=5)
+
+similar_label_2 = tk.Label(similar_img_frame, image=image_similar_object_2)
+similar_label_2.pack(side='left', padx=5, pady=5)
+
+similar_label_3 = tk.Label(similar_img_frame, image=image_similar_object_3)
+similar_label_3.pack(side='left', padx=5, pady=5)
 
 # Start the GUI
 root.mainloop()
